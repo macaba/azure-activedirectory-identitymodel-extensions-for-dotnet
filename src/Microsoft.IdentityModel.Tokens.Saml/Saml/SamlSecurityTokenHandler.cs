@@ -920,14 +920,13 @@ namespace Microsoft.IdentityModel.Tokens.Saml
 
             Validators.ValidateLifetime(securityToken.Assertion.Conditions.NotBefore, securityToken.Assertion.Conditions.NotOnOrAfter, securityToken, validationParameters);
 
-            if (securityToken.Assertion.Conditions.Conditions.ElementAt(0) is SamlAudienceRestrictionCondition)
+            foreach (var condition in securityToken.Assertion.Conditions.Conditions)
             {
-                foreach (var condition in securityToken.Assertion.Conditions.Conditions)
+                if (condition is SamlAudienceRestrictionCondition audienceRestrictionCondition)
                 {
-                    if (condition is SamlAudienceRestrictionCondition audienceRestriction)
-                        Validators.ValidateAudience(audienceRestriction.Audiences.ToDictionary(x => x.OriginalString).Keys, securityToken, validationParameters);
+                    ValidateAudience(audienceRestrictionCondition.Audiences.ToDictionary(x => x.OriginalString).Keys, securityToken, validationParameters);
                 }
-            }            
+            }
         }
 
         /// <summary>

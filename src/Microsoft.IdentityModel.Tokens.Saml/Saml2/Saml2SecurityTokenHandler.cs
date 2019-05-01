@@ -875,6 +875,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             return saml2Subject;
         }
 
+
         /// <summary>
         /// Validates the Lifetime and Audience conditions.
         /// </summary>
@@ -910,7 +911,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
 
             foreach (var audienceRestriction in samlToken.Assertion.Conditions.AudienceRestrictions)
             {
-                Validators.ValidateAudience(audienceRestriction.Audiences, samlToken, validationParameters);
+                ValidateAudience(audienceRestriction.Audiences, samlToken, validationParameters);
             }
         }
 
