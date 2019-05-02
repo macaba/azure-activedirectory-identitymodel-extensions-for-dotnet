@@ -915,7 +915,12 @@ namespace Microsoft.IdentityModel.Tokens.Saml
                 throw LogArgumentNullException(nameof(securityToken.Assertion));
 
             if (securityToken.Assertion.Conditions == null || securityToken.Assertion.Conditions.Conditions.Count() == 0)
+            {
+                if (validationParameters.RequireExpirationTime)
+                    throw LogExceptionMessage(new SecurityTokenValidationException(LogMessages.IDX11314));
+
                 return;
+            }
 
             ValidateLifetime(securityToken.Assertion.Conditions.NotBefore, securityToken.Assertion.Conditions.NotOnOrAfter, securityToken, validationParameters);
 

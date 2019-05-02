@@ -896,10 +896,13 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             if (samlToken.Assertion == null)
                 throw LogArgumentNullException(nameof(samlToken.Assertion));
 
+            if (validationParameters.RequireExpirationTime && samlToken.Assertion.Conditions == null)
+                throw LogExceptionMessage(new SecurityTokenValidationException(LogMessages.IDX13517));
+
             if (samlToken.Assertion.Conditions != null)
             {
                 var utcNow = DateTime.UtcNow;
-                Validators.ValidateLifetime(samlToken.Assertion.Conditions.NotBefore, samlToken.Assertion.Conditions.NotOnOrAfter, samlToken, validationParameters);
+                ValidateLifetime(samlToken.Assertion.Conditions.NotBefore, samlToken.Assertion.Conditions.NotOnOrAfter, samlToken, validationParameters);
 
                 if (samlToken.Assertion.Conditions.OneTimeUse)
                     ValidateOneTimeUseCondition(samlToken, validationParameters);
@@ -913,6 +916,20 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
                 ValidateAudience(audienceRestriction.Audiences, samlToken, validationParameters);
             }
         }
+
+        /// <summary>
+        /// Validates the lifetime of a <see cref="Saml2SecurityToken"/>.
+        /// </summary>
+        /// <param name="notBefore">The <see cref="DateTime"/> value found in the <see cref="Saml2SecurityToken"/>.</param>
+        /// <param name="expires">The <see cref="DateTime"/> value found in the <see cref="Saml2SecurityToken"/>.</param>
+        /// <param name="securityToken">The <see cref="Saml2SecurityToken"/> being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        /// <remarks><see cref="Validators.ValidateLifetime"/> for additional details.</remarks>
+        protected virtual void ValidateLifetime(DateTime? notBefore, DateTime? expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+        {
+            Validators.ValidateLifetime(notBefore, expires, securityToken, validationParameters);
+        }
+
 
         /// <summary>
         /// Validates the OneTimeUse condition.

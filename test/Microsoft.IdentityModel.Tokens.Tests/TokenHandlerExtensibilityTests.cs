@@ -29,6 +29,7 @@ using System;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.TestUtils;
 using Microsoft.IdentityModel.Tokens.Saml;
+using Microsoft.IdentityModel.Tokens.Saml2;
 using Xunit;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
@@ -96,7 +97,17 @@ namespace Microsoft.IdentityModel.Tokens.Tests
             {
                 var jwtTokenHandler = new JsonWebTokenHandler();
                 var samlTokenHandler = new SamlSecurityTokenHandler();
+                var saml2TokenHandler = new Saml2SecurityTokenHandler();
                 var samlToken = samlTokenHandler.WriteToken(samlTokenHandler.CreateToken(new SecurityTokenDescriptor
+                {
+                    Expires = DateTime.UtcNow + TimeSpan.FromDays(1),
+                    Audience = Default.Audience,
+                    SigningCredentials = Default.AsymmetricSigningCredentials,
+                    Issuer = Default.Issuer,
+                    Subject = Default.SamlClaimsIdentity
+                }));
+
+                var saml2Token = saml2TokenHandler.WriteToken(saml2TokenHandler.CreateToken(new SecurityTokenDescriptor
                 {
                     Expires = DateTime.UtcNow + TimeSpan.FromDays(1),
                     Audience = Default.Audience,
@@ -138,6 +149,18 @@ namespace Microsoft.IdentityModel.Tokens.Tests
                         TestId = "SamlSecurityTokenHandler",
                         Token = samlToken,
                         TokenHandler = new VirtualsOverriddenSamlSecurityTokenHandler(),
+                        TokenValidationParameters = new TokenValidationParameters
+                        {
+                            IssuerSigningKey = Default.AsymmetricSigningKey,
+                            ValidAudience = Default.Audience,
+                            ValidIssuer = Default.Issuer
+                        }
+                    },
+                    new ValidateTokenVirtualTheoryData
+                    {
+                        TestId = "Saml2SecurityTokenHandler",
+                        Token = saml2Token,
+                        TokenHandler = new VirtualsOverriddenSaml2SecurityTokenHandler(),
                         TokenValidationParameters = new TokenValidationParameters
                         {
                             IssuerSigningKey = Default.AsymmetricSigningKey,
