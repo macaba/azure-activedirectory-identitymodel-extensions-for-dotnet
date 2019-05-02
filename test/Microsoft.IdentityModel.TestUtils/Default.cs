@@ -86,6 +86,7 @@ namespace Microsoft.IdentityModel.TestUtils
         {
             get => Jwt(SecurityTokenDescriptor(AsymmetricSigningCredentials));
         }
+
 #endif
         public static SecurityTokenDescriptor AsymmetricSignSecurityTokenDescriptor(List<Claim> claims)
         {

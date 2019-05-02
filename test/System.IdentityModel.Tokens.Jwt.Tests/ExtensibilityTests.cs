@@ -25,115 +25,104 @@
 //
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.TestUtils;
+using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
-// since we are in the System ns, we need to map to M.IM.Tokens
-using Token = Microsoft.IdentityModel.Tokens.SecurityToken;
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
 
 namespace System.IdentityModel.Tokens.Jwt.Tests
 {
     /// <summary>
-    /// Test some key extensibility scenarios
+    /// TokenValidation extensibility scenarios
     /// </summary>
     public class ExtensibilityTests
     {
-        [Fact]
-        public void JwtSecurityTokenHandler_Extensibility()
+        [Theory, MemberData(nameof(ValidateVirtualCallGraphTheoryData))]
+        public void ValidateVirtualCallGraph(ValidateTokenVirtualTheoryData theoryData)
         {
-            DerivedJwtSecurityTokenHandler handler = new DerivedJwtSecurityTokenHandler()
-            {
-                DerivedTokenType = typeof(DerivedJwtSecurityToken)
-            };
+            var context = TestUtilities.WriteHeader($"{this}.ValidateVirtualCallGraph", theoryData);
 
-            JwtSecurityToken jwt =
-                new JwtSecurityToken
-                (
-                    issuer: Default.Issuer,
-                    audience: Default.Audience,
-                    claims: ClaimSets.Simple(Default.Issuer, Default.Issuer),
-                    signingCredentials: KeyingMaterial.DefaultX509SigningCreds_2048_RsaSha2_Sha2,
-                    expires: DateTime.UtcNow + TimeSpan.FromHours(10),
-                    notBefore: DateTime.UtcNow
-                );
-
-            string encodedJwt = handler.WriteToken(jwt);
-            TokenValidationParameters tvp = new TokenValidationParameters()
-            {
-                IssuerSigningKey = KeyingMaterial.DefaultX509Key_2048,
-                ValidateAudience = false,
-                ValidIssuer = Default.Issuer,
-            };
-
-            List<string> errors = new List<string>();
-            ValidateDerived(encodedJwt, handler, tvp, ExpectedException.NoExceptionExpected, errors);
-        }
-
-        private void ValidateDerived(string jwt, DerivedJwtSecurityTokenHandler handler, TokenValidationParameters validationParameters, ExpectedException expectedException, List<string> errors)
-        {
             try
             {
-                Token validatedToken;
-                handler.ValidateToken(jwt, validationParameters, out validatedToken);
-                if ((handler.Jwt as DerivedJwtSecurityToken) == null)
-                    errors.Add("(handler.Jwt as DerivedJwtSecurityToken) == null");
+                theoryData.TokenHandler.ValidateToken(theoryData.Token, theoryData.TokenValidationParameters, out SecurityToken validatedToken);
 
-                if (!handler.ReadTokenCalled)
-                    errors.Add("!handler.ReadTokenCalled");
+                if (!theoryData.TokenHandler.CreateClaimsIdentityCalled)
+                    context.AddDiff("!handler.CreateClaimsIdentityCalled");
 
-                if (!handler.ValidateAudienceCalled)
-                    errors.Add("!handler.ValidateAudienceCalled");
+                if (!theoryData.TokenHandler.ReadTokenCalled)
+                    context.AddDiff("!handler.ReadTokenCalled");
 
-                if (!handler.ValidateIssuerCalled)
-                    errors.Add("!handler.ValidateIssuerCalled");
+                if (!theoryData.TokenHandler.ResolveIssuerSigningKeyCalled)
+                    context.AddDiff("!handler.ResolveIssuerSigningKeyCalled");
 
-                if (!handler.ValidateIssuerSigningKeyCalled)
-                    errors.Add("!handler.ValidateIssuerSigningKeyCalled");
+                if (!theoryData.TokenHandler.ResolveTokenDecryptionKeyCalled)
+                    context.AddDiff("!handler.ResolveTokenDecryptionKeyCalled");
 
-                if (!handler.ValidateLifetimeCalled)
-                    errors.Add("!handler.ValidateLifetimeCalled");
+                if (!theoryData.TokenHandler.ValidateAudienceCalled)
+                    context.AddDiff("!handler.ValidateAudienceCalled");
 
-                if (!handler.ValidateSignatureCalled)
-                    errors.Add("!handler.ValidateSignatureCalled");
+                if (!theoryData.TokenHandler.ValidateIssuerCalled)
+                    context.AddDiff("!handler.ValidateIssuerCalled");
 
-                expectedException.ProcessNoException(errors);
+                if (!theoryData.TokenHandler.ValidateIssuerSigningKeyCalled)
+                    context.AddDiff("!handler.ValidateIssuerSigningKeyCalled");
+
+                if (!theoryData.TokenHandler.ValidateLifetimeCalled)
+                    context.AddDiff("!handler.ValidateLifetimeCalled");
+
+                if (!theoryData.TokenHandler.ValidateSignatureCalled)
+                    context.AddDiff("!handler.ValidateSignatureCalled");
+
+                if (!theoryData.TokenHandler.ValidateTokenCalled)
+                    context.AddDiff("!handler.ValidateTokenCalled");
+
+                if (!theoryData.TokenHandler.ValidateTokenReplayCalled)
+                    context.AddDiff("!handler.ValidateTokenCalled");
             }
             catch (Exception ex)
             {
-                expectedException.ProcessException(ex, errors);
+                theoryData.ExpectedException.ProcessException(ex, context);
+            }
+
+            TestUtilities.AssertFailIfErrors(context);
+        }
+
+        public static TheoryData<ValidateTokenVirtualTheoryData> ValidateVirtualCallGraphTheoryData
+        {
+            get
+            {
+                var tokenHandler = new JsonWebTokenHandler();
+                return new TheoryData<ValidateTokenVirtualTheoryData>
+                {
+                    new ValidateTokenVirtualTheoryData
+                    {
+                        Token = tokenHandler.CreateToken(Default.PayloadString, KeyingMaterial.JsonWebKeyRsa256SigningCredentials, KeyingMaterial.DefaultSymmetricEncryptingCreds_Aes256_Sha512_512),
+                        TokenHandler = new DerivedJwtSecurityTokenHandler(),
+                        TokenValidationParameters =  new TokenValidationParameters
+                        {
+                            IssuerSigningKey = KeyingMaterial.JsonWebKeyRsa256SigningCredentials.Key,
+                            TokenDecryptionKey = KeyingMaterial.DefaultSymmetricSecurityKey_512,
+                            ValidAudience = Default.Audience,
+                            ValidIssuer = Default.Issuer
+                        }
+                    }
+                };
             }
         }
 
-        private void RunAlgorithmMappingTest(string jwt, TokenValidationParameters validationParameters, JwtSecurityTokenHandler handler, ExpectedException expectedException)
+
+        public class ValidateTokenVirtualTheoryData : TheoryDataBase
         {
-            try
-            {
-                Token validatedToken;
-                handler.ValidateToken(jwt, validationParameters, out validatedToken);
-                expectedException.ProcessNoException();
-            }
-            catch (Exception ex)
-            {
-                expectedException.ProcessException(ex);
-            }
-        }
+            public string Token { get; set; }
 
-        private string ReplaceAlgorithm(string algorithmKey, string newAlgorithmValue, IDictionary<string, string> algorithmMap)
-        {
-            string originalAlgorithmValue = null;
-            if (algorithmMap.TryGetValue(algorithmKey, out originalAlgorithmValue))
-            {
-                algorithmMap.Remove(algorithmKey);
-            }
+            public IDerivedSecurityTokenHandler TokenHandler { get; set; }
 
-            if (!string.IsNullOrWhiteSpace(newAlgorithmValue))
-            {
-                algorithmMap.Add(algorithmKey, newAlgorithmValue);
-            }
-
-            return originalAlgorithmValue;
+            public TokenValidationParameters TokenValidationParameters{ get; set; }
         }
     }
+
+    #pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
 }

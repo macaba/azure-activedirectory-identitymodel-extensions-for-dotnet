@@ -968,6 +968,8 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
         }
     }
 
+
+
     public class Saml2SecurityTokenHandlerPublic : Saml2SecurityTokenHandler
     {
         public ICollection<Saml2Attribute> ConsolidateAttributesPublic(ICollection<Saml2Attribute> attributes)
@@ -1001,6 +1003,18 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
         public Saml2SecurityTokenPublic(Saml2Assertion assertion)
             : base(assertion)
         {
+        }
+    }
+
+
+    public class Saml2SecurityTokenHandlerDerived : Saml2SecurityTokenHandler
+    {
+        public bool ValidateAudienceCalled { get; set; } = false;
+
+        protected override void ValidateAudience(IEnumerable<string> audiences, SecurityToken securityToken, TokenValidationParameters validationParameters)
+        {
+            ValidateAudienceCalled = true;
+            Validators.ValidateAudience(audiences, securityToken, validationParameters);
         }
     }
 }

@@ -887,10 +887,16 @@ namespace System.IdentityModel.Tokens.Jwt
                     throw LogHelper.LogExceptionMessage(new SecurityTokenInvalidSignatureException(LogHelper.FormatInvariant(TokenLogMessages.IDX10509, typeof(JwtSecurityToken), securityToken.GetType(), token)));
             }
             else
-            { 
-                jwtToken = ReadJwtToken(token);
+            {
+                var securityToken = ReadToken(token);
+                if (securityToken == null)
+                    throw LogHelper.LogExceptionMessage(new SecurityTokenInvalidSignatureException(LogHelper.FormatInvariant(TokenLogMessages.IDX10512, token)));
+
+                jwtToken = securityToken as JwtSecurityToken;
+                if (jwtToken == null)
+                    throw LogHelper.LogExceptionMessage(new SecurityTokenInvalidSignatureException(LogHelper.FormatInvariant(TokenLogMessages.IDX10513, typeof(JwtSecurityToken), securityToken.GetType(), token)));
             }
-                
+
             byte[] encodedBytes = Encoding.UTF8.GetBytes(jwtToken.RawHeader + "." + jwtToken.RawPayload);
             if (string.IsNullOrEmpty(jwtToken.RawSignature))
             {

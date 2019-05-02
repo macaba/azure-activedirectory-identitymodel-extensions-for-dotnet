@@ -875,7 +875,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             return saml2Subject;
         }
 
-
         /// <summary>
         /// Validates the Lifetime and Audience conditions.
         /// </summary>

@@ -32,127 +32,139 @@ using Xunit;
 
 namespace System.IdentityModel.Tokens.Jwt.Tests
 {
-    /// <summary>
-    /// Used in extensibility tests to ensure that the same token flows through validation.
-    /// </summary>
-    public class DerivedJwtSecurityToken : JwtSecurityToken
+    public interface IDerivedSecurityTokenHandler  : ISecurityTokenValidator
     {
-        // TODO - need to add tests for delegates.
 
-        public DerivedJwtSecurityToken(string encodedJwt)
-            : base(encodedJwt)
-        {
-            Init();
-        }
+        bool CreateActorValueCalled { get; set; }
 
-        public DerivedJwtSecurityToken(string issuer = null, string audience = null, IEnumerable<Claim> claims = null, DateTime? expires = null, DateTime? notbefore = null, SigningCredentials signingCredentials = null)
-            : base(issuer, audience, claims, expires, notbefore, signingCredentials)
-        {
-            Init();
-        }
+        bool CreateClaimsIdentityCalled { get; set; }
 
-        public bool ValidateAudienceCalled { get; set; }
+        bool ReadTokenCalled { get; set; }
 
-        public bool ValidateLifetimeCalled { get; set; }
+        bool ResolveIssuerSigningKeyCalled { get; set; }
 
-        public bool ValidateIssuerCalled { get; set; }
+        bool ResolveTokenDecryptionKeyCalled { get; set; }
 
-        public bool ValidateSignatureCalled { get; set; }
+        bool ValidateAudienceCalled { get; set; }
 
-        public bool ValidateSigningKeyCalled { get; set; }
+        bool ValidateIssuerCalled { get; set; }
 
-        public string Guid { get; set; }
+        bool ValidateLifetimeCalled { get; set; }
 
-        private void Init()
-        {
-            ValidateAudienceCalled = false;
-            ValidateLifetimeCalled = false;
-            ValidateIssuerCalled = false;
-            ValidateSignatureCalled = false;
-            ValidateSigningKeyCalled = false;
-        }
+        bool ValidateIssuerSigningKeyCalled { get; set; }
+
+        bool ValidateSignatureCalled { get; set; }
+
+        bool ValidateTokenCalled { get; set; }
+
+        bool ValidateTokenReplayCalled { get; set; }
     }
 
     /// <summary>
     /// Ensures that all protected types use same token.
     /// </summary>
-    public class DerivedJwtSecurityTokenHandler : JwtSecurityTokenHandler
+    public class DerivedJwtSecurityTokenHandler : JwtSecurityTokenHandler, IDerivedSecurityTokenHandler
     {
         public DerivedJwtSecurityTokenHandler()
-            : base()
         {
         }
 
-        public Type DerivedTokenType
-        {
-            get;
-            set;
-        }
+        public bool CreateActorValueCalled { get; set; } = false;
 
-        public bool ReadTokenCalled { get; set; }
+        public bool CreateClaimsIdentityCalled { get; set; } = false;
 
-        public bool ValidateAudienceCalled { get; set; }
+        public bool ReadTokenCalled { get; set; } = false;
 
-        public bool ValidateLifetimeCalled { get; set; }
+        public bool ResolveIssuerSigningKeyCalled { get; set; } = false;
 
-        public bool ValidateIssuerCalled { get; set; }
+        public bool ResolveTokenDecryptionKeyCalled { get; set; } = false;
 
-        public bool ValidateIssuerSigningKeyCalled { get; set; }
+        public bool ValidateAudienceCalled { get; set; } = false;
 
-        public bool ValidateSignatureCalled { get; set; }
+        public bool ValidateIssuerCalled { get; set; } = false;
+
+        public bool ValidateIssuerSigningKeyCalled { get; set; } = false;
+
+        public bool ValidateLifetimeCalled { get; set; } = false;
+
+        public bool ValidateSignatureCalled { get; set; } = false;
+
+        public bool ValidateTokenCalled { get; set; } = false;
+
+        public bool ValidateTokenReplayCalled { get; set; } = false;
 
         public JwtSecurityToken Jwt { get; set; }
 
-        public override SecurityToken ReadToken(string jwtEncodedString)
+        public override SecurityToken ReadToken(string token)
         {
             ReadTokenCalled = true;
-            return new DerivedJwtSecurityToken(jwtEncodedString);
+            return base.ReadToken(token);
+        }
+
+        protected override string CreateActorValue(ClaimsIdentity actor)
+        {
+            CreateActorValueCalled = true;
+            return base.CreateActorValue(actor);
+        }
+
+        protected override ClaimsIdentity CreateClaimsIdentity(JwtSecurityToken jwtToken, string issuer, TokenValidationParameters validationParameters)
+        {
+            CreateClaimsIdentityCalled = true;
+            return base.CreateClaimsIdentity(jwtToken, issuer, validationParameters);
+        }
+
+        protected override SecurityKey ResolveIssuerSigningKey(string token, JwtSecurityToken jwtToken, TokenValidationParameters validationParameters)
+        {
+            ResolveIssuerSigningKeyCalled = true;
+            return base.ResolveIssuerSigningKey(token, jwtToken, validationParameters);
+        }
+
+        protected override SecurityKey ResolveTokenDecryptionKey(string token, JwtSecurityToken jwtToken, TokenValidationParameters validationParameters)
+        {
+            ResolveTokenDecryptionKeyCalled = true;
+            return base.ResolveTokenDecryptionKey(token, jwtToken, validationParameters);
         }
 
         protected override void ValidateAudience(IEnumerable<string> audiences, JwtSecurityToken jwt, TokenValidationParameters validationParameters)
         {
-            DerivedJwtSecurityToken derivedJwt = jwt as DerivedJwtSecurityToken;
-            Assert.NotNull(derivedJwt);
             ValidateAudienceCalled = true;
             base.ValidateAudience(audiences, jwt, validationParameters);
         }
 
         protected override string ValidateIssuer(string issuer, JwtSecurityToken jwt, TokenValidationParameters validationParameters)
         {
-            DerivedJwtSecurityToken derivedJwt = jwt as DerivedJwtSecurityToken;
-            Assert.NotNull(derivedJwt);
             ValidateIssuerCalled = true;
             return base.ValidateIssuer(issuer, jwt, validationParameters);
         }
 
         protected override void ValidateIssuerSecurityKey(SecurityKey securityKey, JwtSecurityToken securityToken, TokenValidationParameters validationParameters)
         {
-            DerivedJwtSecurityToken derivedJwt = securityToken as DerivedJwtSecurityToken;
-            Assert.NotNull(derivedJwt);
             ValidateIssuerSigningKeyCalled = true;
             base.ValidateIssuerSecurityKey(securityKey, securityToken, validationParameters);
         }
 
         protected override void ValidateLifetime(DateTime? notBefore, DateTime? expires, JwtSecurityToken jwt, TokenValidationParameters validationParameters)
         {
-            DerivedJwtSecurityToken derivedJwt = jwt as DerivedJwtSecurityToken;
-            Assert.NotNull(derivedJwt);
             ValidateLifetimeCalled = true;
             base.ValidateLifetime(notBefore, expires, jwt, validationParameters);
         }
 
         protected override JwtSecurityToken ValidateSignature(string securityToken, TokenValidationParameters validationParameters)
         {
-            Jwt = base.ValidateSignature(securityToken, validationParameters);
-            DerivedJwtSecurityToken derivedJwt = Jwt as DerivedJwtSecurityToken;
-            Assert.NotNull(derivedJwt);
             ValidateSignatureCalled = true;
-            return Jwt;
+            return base.ValidateSignature(securityToken, validationParameters);
         }
 
         public override ClaimsPrincipal ValidateToken(string securityToken, TokenValidationParameters validationParameters, out SecurityToken validatedToken)
         {
+            ValidateTokenCalled = true;
             return base.ValidateToken(securityToken, validationParameters, out validatedToken);
+        }
+
+        protected override void ValidateTokenReplay(DateTime? expires, string securityToken, TokenValidationParameters validationParameters)
+        {
+            ValidateTokenReplayCalled = true;
+            base.ValidateTokenReplay(expires, securityToken, validationParameters);
         }
     }
 
