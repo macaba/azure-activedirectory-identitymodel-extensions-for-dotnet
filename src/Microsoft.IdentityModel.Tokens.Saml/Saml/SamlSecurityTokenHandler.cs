@@ -893,7 +893,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml
             Validators.ValidateAudience(audiences, securityToken, validationParameters);
         }
 
-
         /// <summary>
         /// Validates the Lifetime and Audience conditions.
         /// </summary>
@@ -918,7 +917,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
             if (securityToken.Assertion.Conditions == null || securityToken.Assertion.Conditions.Conditions.Count() == 0)
                 return;
 
-            Validators.ValidateLifetime(securityToken.Assertion.Conditions.NotBefore, securityToken.Assertion.Conditions.NotOnOrAfter, securityToken, validationParameters);
+            ValidateLifetime(securityToken.Assertion.Conditions.NotBefore, securityToken.Assertion.Conditions.NotOnOrAfter, securityToken, validationParameters);
 
             foreach (var condition in securityToken.Assertion.Conditions.Conditions)
             {
@@ -950,13 +949,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
         /// <param name="validationParameters">The current <see cref="TokenValidationParameters"/>.</param>
         protected virtual void ValidateIssuerSecurityKey(SecurityKey securityKey, SecurityToken securityToken, TokenValidationParameters validationParameters)
         {
-            if (validationParameters.ValidateIssuerSigningKey)
-            {
-                if (validationParameters.IssuerSigningKeyValidator != null)
-                    validationParameters.IssuerSigningKeyValidator(securityKey, securityToken, validationParameters);
-                else
-                    Validators.ValidateIssuerSecurityKey(securityKey, securityToken, validationParameters);
-            }
+            ValidateIssuerSecurityKey(securityKey, securityToken as SamlSecurityToken, validationParameters);
         }
 
         /// <summary>
@@ -995,6 +988,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
             if (validationParameters == null)
                 throw LogArgumentNullException(nameof(validationParameters));
 
+            // check if null
             var samlToken = ReadSamlToken(token);
             if (validationParameters.SignatureValidator != null)
             {

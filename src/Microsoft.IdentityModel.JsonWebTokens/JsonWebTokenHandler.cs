@@ -713,7 +713,7 @@ namespace Microsoft.IdentityModel.JsonWebTokens
         /// <param name="validationParameters">A <see cref="TokenValidationParameters"/>  required for validation.</param>
         /// <returns>Returns a <see cref="SecurityKey"/> to use for signature validation.</returns>
         /// <remarks>If key fails to resolve, then null is returned</remarks>
-        internal virtual SecurityKey ResolveIssuerSigningKey(JsonWebToken jwtToken, TokenValidationParameters validationParameters)
+        protected virtual SecurityKey ResolveIssuerSigningKey(JsonWebToken jwtToken, TokenValidationParameters validationParameters)
         {
             if (validationParameters == null)
                 throw LogHelper.LogArgumentNullException(nameof(validationParameters));
@@ -776,6 +776,25 @@ namespace Microsoft.IdentityModel.JsonWebTokens
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="validationParameters"></param>
+        /// <param name="validatedToken"></param>
+        /// <returns></returns>
+        public virtual ClaimsPrincipal ValidateToken(string token, TokenValidationParameters validationParameters, out SecurityToken validatedToken)
+        {
+            var tokenValidationResult = ValidateToken(token, validationParameters);
+            if (tokenValidationResult.IsValid)
+            {
+                validatedToken = tokenValidationResult.SecurityToken;
+                return new ClaimsPrincipal(tokenValidationResult.ClaimsIdentity);
+            }
+
+            throw LogHelper.LogExceptionMessage(tokenValidationResult.Exception ?? new SecurityTokenValidationException("token did not validate"));
+        }
+
+        /// <summary>
         /// Validates a JWS or a JWE.
         /// </summary>
         /// <param name="token">A 'JSON Web Token' (JWT) in JWS or JWE Compact Serialization Format.</param>
@@ -832,16 +851,19 @@ namespace Microsoft.IdentityModel.JsonWebTokens
             var expires = (jsonWebToken.ValidTo == null) ? null : new DateTime?(jsonWebToken.ValidTo);
             var notBefore = (jsonWebToken.ValidFrom == null) ? null : new DateTime?(jsonWebToken.ValidFrom);
 
-            Validators.ValidateLifetime(notBefore, expires, jsonWebToken, validationParameters);
-            Validators.ValidateAudience(jsonWebToken.Audiences, jsonWebToken, validationParameters);
-            var issuer = Validators.ValidateIssuer(jsonWebToken.Issuer, jsonWebToken, validationParameters);
-            Validators.ValidateTokenReplay(expires, jsonWebToken.EncodedToken, validationParameters);
+            ValidateLifetime(notBefore, expires, jsonWebToken, validationParameters);
+            //Validators.ValidateLifetime(notBefore, expires, jsonWebToken, validationParameters);
+            ValidateAudience(jsonWebToken.Audiences, jsonWebToken, validationParameters);
+            //Validators.ValidateAudience(jsonWebToken.Audiences, jsonWebToken, validationParameters);
+            var issuer = ValidateIssuer(jsonWebToken.Issuer, jsonWebToken, validationParameters);
+            //var issuer = Validators.ValidateIssuer(jsonWebToken.Issuer, jsonWebToken, validationParameters);
+            ValidateTokenReplay(expires, jsonWebToken.EncodedToken, validationParameters);
             if (validationParameters.ValidateActor && !string.IsNullOrWhiteSpace(jsonWebToken.Actor))
             {
                 var actorValidationResult =  ValidateToken(jsonWebToken.Actor, validationParameters.ActorValidationParameters ?? validationParameters);
             }
-
-            Validators.ValidateIssuerSecurityKey(jsonWebToken.SigningKey, jsonWebToken, validationParameters);
+            ValidateIssuerSecurityKey(jsonWebToken.SigningKey, jsonWebToken, validationParameters);
+            //Validators.ValidateIssuerSecurityKey(jsonWebToken.SigningKey, jsonWebToken, validationParameters);
 
             return new TokenValidationResult
             {
@@ -854,7 +876,7 @@ namespace Microsoft.IdentityModel.JsonWebTokens
         /// <summary>
         /// Validates the JWT signature.
         /// </summary>
-        private JsonWebToken ValidateSignature(string token, TokenValidationParameters validationParameters)
+        protected virtual JsonWebToken ValidateSignature(string token, TokenValidationParameters validationParameters)
         {
             if (string.IsNullOrWhiteSpace(token))
                 throw LogHelper.LogArgumentNullException(nameof(token));
@@ -889,7 +911,10 @@ namespace Microsoft.IdentityModel.JsonWebTokens
             }
             else
             {
-                jwtToken = new JsonWebToken(token);
+                var securityToken = ReadToken(token);
+                jwtToken = securityToken as JsonWebToken;
+                if (jwtToken == null)
+                    throw LogHelper.LogExceptionMessage(new SecurityTokenInvalidSignatureException(LogHelper.FormatInvariant(TokenLogMessages.IDX10509, typeof(JsonWebToken), securityToken.GetType(), token)));
             }
 
             var encodedBytes = Encoding.UTF8.GetBytes(jwtToken.EncodedHeader + "." + jwtToken.EncodedPayload);
@@ -1011,6 +1036,68 @@ namespace Microsoft.IdentityModel.JsonWebTokens
             {
                 cryptoProviderFactory.ReleaseSignatureProvider(signatureProvider);
             }
+        }
+
+        /// <summary>
+        /// Determines if the audiences found in a <see cref="JsonWebToken"/> are valid.
+        /// </summary>
+        /// <param name="audiences">The audiences found in the <see cref="JsonWebToken"/>.</param>
+        /// <param name="jwtToken">The <see cref="JsonWebToken"/> being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        /// <remarks>See <see cref="Validators.ValidateAudience"/> for additional details.</remarks>
+        protected virtual void ValidateAudience(IEnumerable<string> audiences, JsonWebToken jwtToken, TokenValidationParameters validationParameters)
+        {
+            Validators.ValidateAudience(audiences, jwtToken, validationParameters);
+        }
+
+        /// <summary>
+        /// Validates the lifetime of a <see cref="JsonWebToken"/>.
+        /// </summary>
+        /// <param name="notBefore">The <see cref="DateTime"/> value of the 'nbf' claim if it exists in the 'jwtToken'.</param>
+        /// <param name="expires">The <see cref="DateTime"/> value of the 'exp' claim if it exists in the 'jwtToken'.</param>
+        /// <param name="jwtToken">The <see cref="JsonWebToken"/> being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        /// <remarks><see cref="Validators.ValidateLifetime"/> for additional details.</remarks>
+        protected virtual void ValidateLifetime(DateTime? notBefore, DateTime? expires, JsonWebToken jwtToken, TokenValidationParameters validationParameters)
+        {
+            Validators.ValidateLifetime(notBefore, expires, jwtToken, validationParameters);
+        }
+
+        /// <summary>
+        /// Determines if the issuer found in a <see cref="JsonWebToken"/> is valid.
+        /// </summary>
+        /// <param name="issuer">The issuer to validate</param>
+        /// <param name="jwtToken">The <see cref="JsonWebToken"/> that is being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        /// <returns>The issuer to use when creating the <see cref="Claim"/>(s) in the <see cref="ClaimsIdentity"/>.</returns>
+        /// <remarks><see cref="Validators.ValidateIssuer"/> for additional details.</remarks>
+        protected virtual string ValidateIssuer(string issuer, JsonWebToken jwtToken, TokenValidationParameters validationParameters)
+        {
+            return Validators.ValidateIssuer(issuer, jwtToken, validationParameters);
+        }
+
+        /// <summary>
+        /// Validates the <see cref="JsonWebToken.SigningKey"/> is an expected value.
+        /// </summary>
+        /// <param name="key">The <see cref="SecurityKey"/> that signed the <see cref="SecurityToken"/>.</param>
+        /// <param name="securityToken">The <see cref="JsonWebToken"/> to validate.</param>
+        /// <param name="validationParameters">The current <see cref="TokenValidationParameters"/>.</param>
+        /// <remarks>If the <see cref="JsonWebToken.SigningKey"/> is a <see cref="X509SecurityKey"/> then the X509Certificate2 will be validated using the CertificateValidator.</remarks>
+        protected virtual void ValidateIssuerSecurityKey(SecurityKey key, JsonWebToken securityToken, TokenValidationParameters validationParameters)
+        {
+            Validators.ValidateIssuerSecurityKey(key, securityToken, validationParameters);
+        }
+
+
+        /// <summary>
+        /// Determines if a <see cref="JsonWebToken"/> is already validated.
+        /// </summary>
+        /// <param name="expires">The <see cref="DateTime"/> value of the 'exp' claim if it exists in the <see cref="JsonWebToken"/>'.</param>
+        /// <param name="securityToken">The <see cref="JsonWebToken"/> that is being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        protected virtual void ValidateTokenReplay(DateTime? expires, string securityToken, TokenValidationParameters validationParameters)
+        {
+            Validators.ValidateTokenReplay(expires, securityToken, validationParameters);
         }
     }
 }
