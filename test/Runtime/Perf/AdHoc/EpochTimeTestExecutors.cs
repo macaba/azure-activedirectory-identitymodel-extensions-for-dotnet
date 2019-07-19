@@ -25,15 +25,34 @@
 //
 //------------------------------------------------------------------------------
 
-using ValidateTokensCommon;
+using System;
+using Microsoft.IdentityModel.Tokens;
+using RuntimeTestCommon;
 
-namespace ValidateToken
+namespace AdHocTests
 {
-    class Program
+    public static class EpochTimeTestExecutors
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// Calls: <see cref="EpochTime.UtcNow()"/>.
+        /// </summary>
+        public static string EpochTime_UtcNow(TestData testData)
         {
-            ValidateTokens.Run(args);
+            for (int i = 0; i < testData.NumIterations; i++)
+                EpochTime.UtcNow();
+
+            return "";
+        }
+
+        /// <summary>
+        /// Calls: <see cref="EpochTime.GetIntDate(DateTime)"/>.
+        /// </summary>
+        public static string EpochTime_PassDate(TestData testData)
+        {
+            for (int i = 0; i < testData.NumIterations; i++)
+                EpochTime.GetIntDate(DateTime.UtcNow);
+
+            return "";
         }
     }
 }

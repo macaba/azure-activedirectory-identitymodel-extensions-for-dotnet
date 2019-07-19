@@ -1,0 +1,12 @@
+<root>
+  <runtimes>net461</runtimes>
+  <releases>
+    <version value="5.4.0" />
+    <version value="5.5.0" />
+	<version value="6.2.0-preview-6081303020" />
+  </releases>
+  <perf>
+    <project name="CreateTokens" loops="101" iterations="110"/>
+  </perf>
+</root>
+https://www.myget.org/F/azureadwebstacknightly/api/v3/index.json

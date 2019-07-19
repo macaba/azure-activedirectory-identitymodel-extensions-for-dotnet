@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project >
+  <ItemGroup>
+    <Compile Include="$(RootFolder)\Common\CryptoUtils.cs"/>
+    <Compile Include="$(RootFolder)\Common\LogMessages.cs"/>
+    <Compile Include="$(RootFolder)\Common\TestConfig.cs"/>
+    <Compile Include="$(RootFolder)\Common\TestData.cs"/>
+    <Compile Include="$(RootFolder)\Common\TestLogger.cs"/>
+    <Compile Include="$(RootFolder)\Common\TestRun.cs"/>
+    <Compile Include="$(RootFolder)\Common\TestRunner.cs"/>
+    <Compile Include="$(RootFolder)\Common\TestUtilities.cs"/>
+    <Compile Include="$(RootFolder)\Common\TokenTestData.cs"/>
+    <Compile Include="$(RootFolder)\Common\TokenTestExecutors.cs"/>
+  </ItemGroup>
+</Project>

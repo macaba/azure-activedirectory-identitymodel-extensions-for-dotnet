@@ -1,9 +1,9 @@
 param(
-    [string]$buildType="Debug",
+    [string]$buildType="release",
     [string]$dotnetDir="c:\Program Files\dotnet",
     [string]$msbuildDir="C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin",
     [string]$root=$PSScriptRoot,
-    [string]$runTests="YES",
+    [string]$runTests="NO",
     [string]$failBuildOnTest="YES",
     [string]$slnFile="wilson.sln",
     [switch]$runApiCompat,
@@ -135,10 +135,24 @@ Write-Host ""
 Write-Host "msbuildexe: " $msbuildexe
 $p = Start-Process -Wait -PassThru -NoNewWindow $msbuildexe "/r:True /p:UseSharedCompilation=false /nr:false /verbosity:m /p:Configuration=$buildType /p:RunApiCompat=$runApiCompat $slnFile"
 
+# we need the for current assemblies
+$currentRuntimePath = "$root\test\Runtime\Assemblies\current\$buildType\net461\"
+CreateArtifactsRoot($currentRuntimePath)
+foreach($project in $buildConfiguration.SelectNodes("root/projects/src/project"))
+{
+	$name = $project.name;
+    if (Test-Path $root\src\$name\bin\$buildType\net461\$name.dll)
+    {
+        Write-Host "Copying:  $currentRuntimePath\$name.dll"
+        Copy-Item -Path "$root\src\$name\bin\$buildType\net461\$name.dll" -Destination "$currentRuntimePath" -Force
+    }
+}
+
 if($p.ExitCode -ne 0)
 {
-	throw "Build failed."
+    throw "Build failed."
 }
+
 popd
 
 if ($generateContractAssemblies.IsPresent)

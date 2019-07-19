@@ -25,15 +25,13 @@
 //
 //------------------------------------------------------------------------------
 
-using ValidateTokensCommon;
-
-namespace ValidateToken
+namespace RuntimeTests
 {
     class Program
     {
         static void Main(string[] args)
         {
-            ValidateTokens.Run(args);
+            CreateTokens.Run(args);
         }
     }
 }

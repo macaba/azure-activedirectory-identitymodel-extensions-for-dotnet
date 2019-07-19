@@ -2,15 +2,15 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
-    <AssemblyVersion>Dev5x</AssemblyVersion>
+    <AssemblyVersion>dev</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{00FDDD96-8154-4EE7-B7CB-54B196D26154}</ProjectGuid>
+    <ProjectGuid>{A91170F7-E126-43FF-97E0-44380C7D8CFC}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>CreateTokens</RootNamespace>
-    <AssemblyName>CreateTokensDev5x</AssemblyName>
+    <RootNamespace>AdHoc</RootNamespace>
+    <AssemblyName>AdHoc</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -36,7 +36,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\Artifacts\debug\Dev5x\</OutputPath>
+    <OutputPath>..\..\..\Artifacts\debug\AdHoc\$(AssemblyVersion)</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -45,20 +45,15 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\Artifacts\release\Dev5x\</OutputPath>
+    <OutputPath>..\..\Artifacts\release\AdHoc\$(AssemblyVersion)</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <Import Project="..\..\..\SecurityTokensCommon\SecurityTokensAssemblies.targets" />
-  <Import Project="..\..\..\SecurityTokensCommon\RuntimeTestCommon.targets" />
+  <Import Project="..\..\build\RuntimeTestCommon.targets" />
   <ItemGroup>
-    <Compile Include="..\CreateTokensCommon\Data.cs">
-      <Link>Data.cs</Link>
-    </Compile>
-    <Compile Include="..\CreateTokensCommon\CreateTokensTests.cs">
-      <Link>CreateTokensTests.cs</Link>
-    </Compile>
+    <Compile Include="EpochTimeTestExecutors.cs" />
+    <Compile Include="EpochTimeTests.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -76,12 +71,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Microsoft.IdentityModel.TestUtils\Microsoft.IdentityModel.TestUtils.csproj">
-      <Project>{7d283e6a-7842-427c-bb8f-a3dd4665db87}</Project>
-      <Name>Microsoft.IdentityModel.TestUtils</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

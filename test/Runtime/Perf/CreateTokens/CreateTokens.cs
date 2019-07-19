@@ -32,14 +32,14 @@ using System.IO;
 using RuntimeTestCommon;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Logging;
-using Microsoft.IdentityModel.TestUtils;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Tokens.Saml;
 using Microsoft.IdentityModel.Tokens.Saml2;
+using Microsoft.IdentityModel.TestUtils;
 
-namespace ValidateTokensCommon
+namespace RuntimeTests
 {
-    public class ValidateTokens
+    public class CreateTokens
     {
         public static void Run(string[] args)
         {
@@ -48,14 +48,19 @@ namespace ValidateTokensCommon
                 new List<TestExecutor>
                 {
                     TokenTestExecutors.JsonWebTokenHandler_CreateToken,
-                    //TokenTestExecutors.JwtSecurityTokenHandler_CreateToken,
-                    //TokenTestExecutors.Saml2SecurityTokenHandler_CreateToken,
-                    //TokenTestExecutors.SamlSecurityTokenHandler_CreateToken,
+                    TokenTestExecutors.JwtSecurityTokenHandler_CreateToken,
+                    TokenTestExecutors.Saml2SecurityTokenHandler_CreateToken,
+                    TokenTestExecutors.SamlSecurityTokenHandler_CreateToken,
                 });
 
-            var securityTokenDescriptor = Default.AsymmetricSignSecurityTokenDescriptor(Default.SamlClaims);
-            securityTokenDescriptor.Claims = Default.PayloadDictionary;
-            var tokenValidationParameters = Default.AsymmetricSignTokenValidationParameters;
+            var securityTokenDescriptor = new SecurityTokenDescriptor
+            {
+                Claims = Data.ClaimsDictionary,
+                Issuer = "https://createTokens.com",
+                Subject = Data.Subject,
+                SigningCredentials = new SigningCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaSha256, SecurityAlgorithms.Sha256),
+            };
+
             var jwtTokenHandler = new JwtSecurityTokenHandler();
             var samlTokenHandler = new SamlSecurityTokenHandler();
             var saml2TokenHandler = new Saml2SecurityTokenHandler();

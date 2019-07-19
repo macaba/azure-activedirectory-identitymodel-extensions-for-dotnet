@@ -38,6 +38,28 @@ namespace Microsoft.IdentityModel.Tokens
         /// DateTime as UTV for UnixEpoch
         /// </summary>
         public static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        internal static long UnixEpochTicks = UnixEpoch.Ticks;
+        internal const double SecondsPerTick = 1.0 / TimeSpan.TicksPerSecond;         // 0.0000001
+
+
+        /// <summary>
+        /// Gets the number of seconds from 1970-01-01T0:0:0Z as measured in UTC.
+        /// </summary>
+        /// <returns>the number of seconds since Unix Epoch.</returns>
+        public static long UtcNow()
+        {
+            return (long)((System.DateTime.UtcNow.Ticks - UnixEpochTicks) * SecondsPerTick);
+        }
+
+        /// <summary>
+        /// Gets the number of seconds from 1970-01-01T0:0:0Z as measured in UTC.
+        /// </summary>
+        /// <returns>the number of seconds since Unix Epoch.</returns>
+        internal static long UtcNow(DateTime datetime)
+        {
+            return (long)((datetime.Ticks - UnixEpochTicks) * SecondsPerTick);
+        }
+
 
         /// <summary>
         /// Per JWT spec:

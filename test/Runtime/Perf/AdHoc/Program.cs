@@ -25,15 +25,13 @@
 //
 //------------------------------------------------------------------------------
 
-using ValidateTokensCommon;
-
-namespace ValidateToken
+namespace AdHocTests
 {
     class Program
     {
         static void Main(string[] args)
         {
-            ValidateTokens.Run(args);
+            EpochTimeTests.Run(args);
         }
     }
 }
