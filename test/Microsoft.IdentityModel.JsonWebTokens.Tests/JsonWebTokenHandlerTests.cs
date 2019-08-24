@@ -25,10 +25,6 @@
 //
 //------------------------------------------------------------------------------
 
-using Microsoft.IdentityModel.Json;
-using Microsoft.IdentityModel.Json.Linq;
-using Microsoft.IdentityModel.TestUtils;
-using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -37,6 +33,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Json;
+using Microsoft.IdentityModel.Json.Linq;
+using Microsoft.IdentityModel.TestUtils;
+using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
@@ -1202,6 +1202,100 @@ namespace Microsoft.IdentityModel.JsonWebTokens.Tests
         }
 
         public static TheoryData<JwtTheoryData> ValidateJwsTheoryData
+        {
+            get
+            {
+                return new TheoryData<JwtTheoryData>
+                {
+                    new JwtTheoryData
+                    {
+                        TestId = nameof(Default.SymmetricJws) + "RequireSignedTokens",
+                        Token = Default.SymmetricJws,
+                        ValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuerSigningKey = true,
+                            RequireSignedTokens = true,
+                            IssuerSigningKey = Default.SymmetricSigningKey,
+                            ValidateIssuer = false,
+                            ValidateAudience = false,
+                            ValidateLifetime = false,
+                        }
+                    },
+                    new JwtTheoryData
+                    {
+                        ExpectedException = ExpectedException.SecurityTokenSignatureKeyNotFoundException("IDX10501:"),
+                        TestId = nameof(Default.SymmetricJws) + "RequireSignedTokensNullSigningKey",
+                        Token = Default.SymmetricJws,
+                        ValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuerSigningKey = true,
+                            RequireSignedTokens = true,
+                            IssuerSigningKey = null,
+                            ValidateIssuer = false,
+                            ValidateAudience = false,
+                            ValidateLifetime = false,
+                        }
+                    },
+                    new JwtTheoryData
+                    {
+                        TestId = nameof(Default.SymmetricJws) + "DontRequireSignedTokens",
+                        Token = Default.SymmetricJws,
+                        ValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuerSigningKey = true,
+                            RequireSignedTokens = false,
+                            IssuerSigningKey = Default.SymmetricSigningKey,
+                            ValidateIssuer = false,
+                            ValidateAudience = false,
+                            ValidateLifetime = false,
+                        }
+                    },
+                    new JwtTheoryData
+                    {
+                        TestId = nameof(Default.UnsignedJwt) + "DontRequireSignedTokensNullSigningKey",
+                        Token = Default.UnsignedJwt,
+                        ValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuerSigningKey = true,
+                            RequireSignedTokens = false,
+                            IssuerSigningKey = null,
+                            ValidateIssuer = false,
+                            ValidateAudience = false,
+                            ValidateLifetime = false,
+                        }
+                    }
+                };
+            }
+        }
+
+
+        [Theory, MemberData(nameof(ValidateTokenAndCreateClaimsPrincipalTheoryData))]
+        public void ValidateTokenAndCreateClaimsPrincipal(JwtTheoryData theoryData)
+        {
+            var context = TestUtilities.WriteHeader($"{this}.ValidateTokenAndCreateClaimsPrincipal", theoryData);
+            var jsonWebTokenHandler = new JsonWebTokenHandler();
+            try
+            {
+                var claimsPrincipal = jsonWebTokenHandler.ValidateToken(theoryData.Token, theoryData.ValidationParameters, out SecurityToken token);
+                var tokenValidationResult = jsonWebTokenHandler.ValidateToken(theoryData.Token, theoryData.ValidationParameters);
+
+                 if (claimsPrincipal == null)
+                    context.AddDiff("claimsPrincipal == null");
+
+                 if (token == null)
+                    context.AddDiff("token == null");
+
+                IdentityComparer.AreEqual(token, tokenValidationResult.SecurityToken, context);
+
+                theoryData.ExpectedException.ProcessNoException(context);
+            }
+            catch (Exception ex)
+            {
+                theoryData.ExpectedException.ProcessException(ex, context);
+            }
+        }
+
+        public static TheoryData<JwtTheoryData> ValidateTokenAndCreateClaimsPrincipalTheoryData
         {
             get
             {
